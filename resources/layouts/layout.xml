@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!-- Main layout for LT1 Test App — drawn programmatically in View for flexibility -->
+<layouts>
+  <layout id="MainLayout">
+    <!-- All drawing is done in onUpdate() via Dc calls for real-time data -->
+  </layout>
+</layouts>
