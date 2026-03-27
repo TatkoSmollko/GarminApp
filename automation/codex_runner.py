@@ -292,7 +292,6 @@ def run_codex(repo_dir: Path, issue: Issue, branch_name: str) -> tuple[int, str]
     cmd = [
         resolve_codex_bin(),
         "exec",
-        "--full-auto",
         "--cd",
         str(repo_dir),
         "--output-last-message",
@@ -300,6 +299,8 @@ def run_codex(repo_dir: Path, issue: Issue, branch_name: str) -> tuple[int, str]
     ]
     if _bool_env("CODEX_BYPASS_SANDBOX", default=False):
         cmd.append("--dangerously-bypass-approvals-and-sandbox")
+    else:
+        cmd.append("--full-auto")
 
     model = os.getenv("CODEX_MODEL")
     if model:
