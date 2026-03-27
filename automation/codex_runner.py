@@ -83,6 +83,12 @@ def _request_json(
         return json.loads(raw) if raw else None
 
 
+def authenticated_remote_url() -> str:
+    repo = _env("GITHUB_REPOSITORY")
+    token = urllib.parse.quote(_env("GITHUB_TOKEN"), safe="")
+    return f"https://x-access-token:{token}@github.com/{repo}.git"
+
+
 @dataclass
 class Issue:
     number: int
@@ -184,7 +190,10 @@ def ensure_clean_checkout(repo_dir: Path) -> None:
 
 
 def remote_branch_exists(repo_dir: Path, branch_name: str) -> bool:
-    exists = run(["git", "ls-remote", "--exit-code", "--heads", "origin", branch_name], cwd=repo_dir)
+    exists = run(
+        ["git", "ls-remote", "--exit-code", "--heads", authenticated_remote_url(), branch_name],
+        cwd=repo_dir,
+    )
     return exists.returncode == 0
 
 
@@ -201,7 +210,9 @@ def resolve_branch_name(repo_dir: Path, issue: Issue) -> str:
 
 
 def checkout_branch(repo_dir: Path, branch_name: str) -> None:
-    run(["git", "fetch", "origin"], cwd=repo_dir)
+    fetch = run(["git", "fetch", authenticated_remote_url(), branch_name], cwd=repo_dir, capture=True)
+    if fetch.returncode != 0:
+        raise RuntimeError(fetch.stderr.strip() or f"failed to fetch {branch_name}")
     if not remote_branch_exists(repo_dir, branch_name):
         raise RuntimeError(f"remote branch does not exist: {branch_name}")
 
@@ -209,11 +220,11 @@ def checkout_branch(repo_dir: Path, branch_name: str) -> None:
     if local_exists.returncode == 0 and local_exists.stdout.strip():
         result = run(["git", "checkout", branch_name], cwd=repo_dir, capture=True)
     else:
-        result = run(["git", "checkout", "-b", branch_name, f"origin/{branch_name}"], cwd=repo_dir, capture=True)
+        result = run(["git", "checkout", "-b", branch_name, "FETCH_HEAD"], cwd=repo_dir, capture=True)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or f"failed to checkout {branch_name}")
 
-    reset = run(["git", "reset", "--hard", f"origin/{branch_name}"], cwd=repo_dir, capture=True)
+    reset = run(["git", "reset", "--hard", "FETCH_HEAD"], cwd=repo_dir, capture=True)
     if reset.returncode != 0:
         raise RuntimeError(reset.stderr.strip() or f"failed to sync {branch_name}")
 
@@ -297,7 +308,11 @@ def commit_and_push(repo_dir: Path, issue: Issue, branch_name: str) -> str:
     if commit.returncode != 0:
         raise RuntimeError(commit.stderr.strip() or commit.stdout.strip() or "git commit failed")
 
-    push = run(["git", "push", "origin", branch_name], cwd=repo_dir, capture=True)
+    push = run(
+        ["git", "push", authenticated_remote_url(), f"HEAD:refs/heads/{branch_name}"],
+        cwd=repo_dir,
+        capture=True,
+    )
     if push.returncode != 0:
         raise RuntimeError(push.stderr.strip() or "git push failed")
 
