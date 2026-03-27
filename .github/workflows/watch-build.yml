@@ -30,7 +30,7 @@ jobs:
           echo "Downloading: ${DEB_URL}"
           wget -q "${DEB_URL}" -O /tmp/ciq-cli.deb
           sudo dpkg -i /tmp/ciq-cli.deb
-          connect-iq-sdk-manager --version
+          connect-iq-sdk-manager version
 
       # ── 2. Accept licence + download SDK ────────────────────────────────────
       - name: Cache Connect IQ SDK
