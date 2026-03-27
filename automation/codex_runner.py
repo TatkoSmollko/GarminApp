@@ -242,6 +242,8 @@ def build_prompt(issue: Issue, branch_name: str) -> str:
             "- Keep the change small and isolated.",
             "- Default to `watch-app/` unless the issue explicitly requires `backend/`.",
             "- After code changes, run the relevant local verification that is realistically available.",
+            "- Do not run `git commit`, `git push`, open PRs, or change issue labels/comments yourself.",
+            "- Leave code or file changes in the working tree; the runner handles commit and push.",
             "- Do not open interactive prompts.",
             "- Leave a concise final summary suitable for a PR description.",
             "",
@@ -325,22 +327,28 @@ def run_codex(repo_dir: Path, issue: Issue, branch_name: str) -> tuple[int, str]
     return result.returncode, final_message
 
 
+def issue_requests_empty_commit(issue: Issue) -> bool:
+    haystack = f"{issue.title}\n{issue.body}".lower()
+    return "empty commit" in haystack or "emtpy commit" in haystack or "--allow-empty" in haystack
+
+
 def commit_and_push(repo_dir: Path, issue: Issue, branch_name: str) -> str:
     status = run(["git", "status", "--porcelain"], cwd=repo_dir, capture=True)
     if status.returncode != 0:
         raise RuntimeError(status.stderr.strip() or "git status failed")
-    if not status.stdout.strip():
+    has_changes = bool(status.stdout.strip())
+    if not has_changes and not issue_requests_empty_commit(issue):
         return "No file changes were produced."
 
-    add = run(["git", "add", "-A"], cwd=repo_dir, capture=True)
-    if add.returncode != 0:
-        raise RuntimeError(add.stderr.strip() or "git add failed")
+    if has_changes:
+        add = run(["git", "add", "-A"], cwd=repo_dir, capture=True)
+        if add.returncode != 0:
+            raise RuntimeError(add.stderr.strip() or "git add failed")
 
-    commit = run(
-        ["git", "commit", "-m", f"codex: resolve issue #{issue.number}"],
-        cwd=repo_dir,
-        capture=True,
-    )
+    commit_cmd = ["git", "commit", "-m", f"codex: resolve issue #{issue.number}"]
+    if not has_changes:
+        commit_cmd.insert(2, "--allow-empty")
+    commit = run(commit_cmd, cwd=repo_dir, capture=True)
     if commit.returncode != 0:
         raise RuntimeError(commit.stderr.strip() or commit.stdout.strip() or "git commit failed")
 
@@ -352,7 +360,9 @@ def commit_and_push(repo_dir: Path, issue: Issue, branch_name: str) -> str:
     if push.returncode != 0:
         raise RuntimeError(push.stderr.strip() or "git push failed")
 
-    return "Committed and pushed changes."
+    if has_changes:
+        return "Committed and pushed changes."
+    return "Created and pushed an empty commit."
 
 
 def classify_failure(message: str) -> str:
