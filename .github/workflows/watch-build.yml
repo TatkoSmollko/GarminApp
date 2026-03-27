@@ -8,32 +8,100 @@ on:
 
 jobs:
   build-watch-app:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+
+    env:
+      # ── Pin to a specific SDK release ──────────────────────────────────────
+      # To upgrade: grab the Linux zip filename from
+      #   https://developer.garmin.com/connect-iq/sdk/
+      # and update the two variables below.
+      CIQ_SDK_VERSION: "7.4.3"
+      CIQ_SDK_BUILD:   "2024-11-14-98ea4ca5e"   # build hash from the zip filename
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Connect IQ SDK
-        run: brew install --cask connectiq
+      # Cache the SDK so repeat runs don't re-download ~200 MB every time.
+      - name: Cache Connect IQ SDK
+        id: cache-ciq
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ciq-sdk
+          key: ciq-sdk-${{ env.CIQ_SDK_VERSION }}-${{ env.CIQ_SDK_BUILD }}
+
+      - name: Download Connect IQ SDK
+        if: steps.cache-ciq.outputs.cache-hit != 'true'
+        run: |
+          ZIP="connectiq-sdk-lin-${{ env.CIQ_SDK_VERSION }}-${{ env.CIQ_SDK_BUILD }}.zip"
+          URL="https://developer.garmin.com/downloads/connect-iq/sdks/${ZIP}"
+          echo "Downloading: ${URL}"
+          wget -q "${URL}" -O /tmp/ciq-sdk.zip
+          mkdir -p "${{ runner.temp }}/ciq-sdk"
+          unzip -q /tmp/ciq-sdk.zip -d "${{ runner.temp }}/ciq-sdk"
+
+      - name: Add SDK to PATH
+        run: |
+          SDK_BIN=$(find "${{ runner.temp }}/ciq-sdk" -name "monkeyc" -type f | head -1 | xargs dirname)
+          echo "SDK bin: ${SDK_BIN}"
+          chmod +x "${SDK_BIN}/monkeyc"
+          echo "${SDK_BIN}" >> $GITHUB_PATH
+
+      - name: Verify SDK + list available devices
+        run: |
+          monkeyc --version
+          # Show devices directory so we can confirm fr955 is present
+          SDK_ROOT=$(find "${{ runner.temp }}/ciq-sdk" -name "monkeyc" -type f | head -1 | xargs dirname | xargs dirname)
+          ls "${SDK_ROOT}/devices/" | grep -E "fr955|fr265|fr965|epix2" || true
 
       - name: Generate temporary developer key
         run: |
-          mkdir -p "$HOME/.garmin"
-          openssl genrsa -out "$HOME/.garmin/developer_key.pem" 4096
+          openssl genrsa -out /tmp/dev_key.pem 4096
           openssl pkcs8 -topk8 -inform PEM -outform DER \
-            -in "$HOME/.garmin/developer_key.pem" \
-            -out "$HOME/.garmin/developer_key.der" \
+            -in /tmp/dev_key.pem \
+            -out /tmp/dev_key.der \
             -nocrypt
 
-      - name: Build FR955 app
+      # Build once per supported device so we catch device-specific API issues.
+      - name: Build — fr955
         run: |
-          monkeyc -f watch-app/monkey.jungle \
-            -o /tmp/garminApp.prg \
+          monkeyc \
+            -f watch-app/monkey.jungle \
+            -o /tmp/lt1test-fr955.prg \
             -d fr955 \
             -w \
-            -y "$HOME/.garmin/developer_key.der"
+            -y /tmp/dev_key.der
 
-      - name: Note test status
+      - name: Build — fr265
         run: |
-          echo "Connect IQ unit tests exist, but reliable headless simulator test execution is not yet confirmed for this repository."
+          monkeyc \
+            -f watch-app/monkey.jungle \
+            -o /tmp/lt1test-fr265.prg \
+            -d fr265 \
+            -w \
+            -y /tmp/dev_key.der
+
+      - name: Build — fr965
+        run: |
+          monkeyc \
+            -f watch-app/monkey.jungle \
+            -o /tmp/lt1test-fr965.prg \
+            -d fr965 \
+            -w \
+            -y /tmp/dev_key.der
+
+      - name: Build — epix2
+        run: |
+          monkeyc \
+            -f watch-app/monkey.jungle \
+            -o /tmp/lt1test-epix2.prg \
+            -d epix2 \
+            -w \
+            -y /tmp/dev_key.der
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: watch-app-prg
+          path: /tmp/lt1test-*.prg
+          retention-days: 14
