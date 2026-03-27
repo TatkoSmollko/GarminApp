@@ -59,41 +59,16 @@ jobs:
             -out "$HOME/.garmin/developer_key.der" \
             -nocrypt
 
-      - name: Build FR955 app
+      - name: Build IQ package
         run: |
           "$MONKEYC" -f watch-app/monkey.jungle \
-            -o /tmp/lt1test-fr955.prg \
-            -d fr955 \
-            -w \
-            -y "$HOME/.garmin/developer_key.der"
-
-      - name: Build FR265 app
-        run: |
-          "$MONKEYC" -f watch-app/monkey.jungle \
-            -o /tmp/lt1test-fr265.prg \
-            -d fr265 \
-            -w \
-            -y "$HOME/.garmin/developer_key.der"
-
-      - name: Build FR965 app
-        run: |
-          "$MONKEYC" -f watch-app/monkey.jungle \
-            -o /tmp/lt1test-fr965.prg \
-            -d fr965 \
-            -w \
-            -y "$HOME/.garmin/developer_key.der"
-
-      - name: Build epix2 app
-        run: |
-          "$MONKEYC" -f watch-app/monkey.jungle \
-            -o /tmp/lt1test-epix2.prg \
-            -d epix2 \
-            -w \
+            -o /tmp/lt1test.iq \
+            -e \
             -y "$HOME/.garmin/developer_key.der"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: watch-app-prg
-          path: /tmp/lt1test-*.prg
+          name: watch-app-iq
+          path: /tmp/lt1test.iq
           retention-days: 14
