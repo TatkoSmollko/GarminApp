@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CIQ_SDK_VERSION: "7.4.3"        # bump when new SDK released
+      CIQ_SDK_VERSION: "9.1.0"        # must match a version available in connect-iq-sdk-manager
       CIQ_CLI_VERSION: "0.8.4"        # lindell/connect-iq-sdk-manager-cli
 
     steps:
