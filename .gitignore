@@ -7,14 +7,16 @@ dev_key_rsa.pem
 # Build artefacts
 bin/
 dist/
+watch-app/bin/
+watch-app/dist/
 
 # Python
-pipeline/.venv/
-pipeline/__pycache__/
-pipeline/**/__pycache__/
-pipeline/.env
-pipeline/output/
+backend/pipeline/.venv/
+backend/pipeline/__pycache__/
+backend/pipeline/**/__pycache__/
+backend/pipeline/.env
+backend/pipeline/output/
 
 # macOS
 .DS_Store
-source/.DS_Store
+watch-app/source/.DS_Store

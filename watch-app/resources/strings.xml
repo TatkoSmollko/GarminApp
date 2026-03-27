@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<strings>
+  <string id="AppName">LT1 Test</string>
+  <string id="LabelWarmup">Warmup</string>
+  <string id="LabelStage">Stage</string>
+  <string id="LabelTransition">Recover</string>
+  <string id="LabelComplete">Done</string>
+  <string id="LabelIdle">Ready</string>
+  <string id="LabelPaused">Paused</string>
+  <string id="LabelDFA">DFA α1</string>
+  <string id="LabelHR">HR</string>
+  <string id="LabelLT1">LT1</string>
+  <string id="LabelConf">Conf</string>
+  <string id="LabelQuality">RR Qual</string>
+  <string id="LabelPressStart">Press START</string>
+  <string id="LabelChestStrap">Use chest strap</string>
+  <string id="LabelLowConfidence">Low confidence</string>
+  <string id="LabelDetected">LT1 Detected!</string>
+  <string id="LabelNotDetected">LT1 not detected</string>
+  <string id="LabelBpm">bpm</string>
+  <string id="LabelMin">min</string>
+  <string id="LabelProtocolVersion">1</string>
+  <!-- Settings screen strings (shown in Garmin Connect mobile app) -->
+  <string id="SettingEmailTitle">Report Email</string>
+  <string id="SettingEmailDesc">Your email address. The LT1 report will be sent here after each test.</string>
+  <string id="SettingApiTitle">API Endpoint</string>
+  <string id="SettingApiDesc">Backend server URL. Leave default unless self-hosting.</string>
+</strings>

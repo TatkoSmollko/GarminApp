@@ -1,0 +1,39 @@
+name: Watch Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-watch-app:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Connect IQ SDK
+        run: brew install --cask connectiq
+
+      - name: Generate temporary developer key
+        run: |
+          mkdir -p "$HOME/.garmin"
+          openssl genrsa -out "$HOME/.garmin/developer_key.pem" 4096
+          openssl pkcs8 -topk8 -inform PEM -outform DER \
+            -in "$HOME/.garmin/developer_key.pem" \
+            -out "$HOME/.garmin/developer_key.der" \
+            -nocrypt
+
+      - name: Build FR955 app
+        run: |
+          monkeyc -f watch-app/monkey.jungle \
+            -o /tmp/garminApp.prg \
+            -d fr955 \
+            -w \
+            -y "$HOME/.garmin/developer_key.der"
+
+      - name: Note test status
+        run: |
+          echo "Connect IQ unit tests exist, but reliable headless simulator test execution is not yet confirmed for this repository."

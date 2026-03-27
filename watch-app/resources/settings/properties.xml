@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!-- properties.xml
+     Defines persistent properties editable via the Garmin Connect mobile app.
+     The user never touches the watch to set these — they use the phone.
+
+     After installing the app from the IQ Store, the user opens:
+       Garmin Connect app → More → Connect IQ Apps → LT1 Test → Settings
+     and enters their email address once.
+
+     The watch app reads these via Application.Properties.getValue("userEmail").
+-->
+<properties>
+
+    <!-- User's email address — report will be sent here after each test. -->
+    <property id="userEmail" type="string"></property>
+
+    <!-- Backend API endpoint.
+         Default points to your production server.
+         Power users can override this (e.g., for self-hosting). -->
+    <property id="apiEndpoint" type="string">https://api.lt1test.app/submit</property>
+
+</properties>
