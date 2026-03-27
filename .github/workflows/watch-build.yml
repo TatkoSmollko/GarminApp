@@ -8,66 +8,26 @@ on:
 
 jobs:
   build-watch-app:
-    runs-on: macos-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Connect IQ SDK
-        run: brew install --cask connectiq
-
-      - name: Resolve SDK tools
+      - name: Verify local Garmin toolchain
         run: |
-          SDK_ROOT=""
+          command -v monkeyc
+          monkeyc --version
 
-          if [ -z "$SDK_ROOT" ]; then
-            SDK_ROOT="$(find /opt/homebrew/Caskroom/connectiq /usr/local/Caskroom/connectiq -type f -name monkeyc 2>/dev/null | head -n 1 | xargs dirname)"
-            SDK_ROOT="${SDK_ROOT%/bin}"
-          fi
-
-          for CFG in \
-            "$HOME/.Garmin/ConnectIQ/current-sdk.cfg" \
-            "$HOME/Library/Application Support/Garmin/ConnectIQ/current-sdk.cfg"
-          do
-            if [ -f "$CFG" ]; then
-              SDK_ROOT="$(cat "$CFG")"
-              break
-            fi
-          done
-
-          if [ -z "$SDK_ROOT" ] && [ -d /Applications/ConnectIQ.app ]; then
-            SDK_ROOT="$(find /Applications/ConnectIQ.app -type f -name monkeyc | head -n 1 | xargs dirname)"
-            SDK_ROOT="${SDK_ROOT%/bin}"
-          fi
-
-          if [ -z "$SDK_ROOT" ]; then
-            echo "Unable to locate Connect IQ SDK installation"
-            exit 1
-          fi
-
-          echo "SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
-          echo "MONKEYC=$SDK_ROOT/bin/monkeyc" >> "$GITHUB_ENV"
-          echo "PROJECT_INFO=$SDK_ROOT/bin/projectInfo.xml" >> "$GITHUB_ENV"
-          echo "Using SDK_ROOT=$SDK_ROOT"
-          "$SDK_ROOT/bin/monkeyc" --version
-          ls -l "$SDK_ROOT/bin/projectInfo.xml"
-
-      - name: Generate temporary developer key
+      - name: Verify developer key
         run: |
-          mkdir -p "$HOME/.garmin"
-          openssl genrsa -out "$HOME/.garmin/developer_key.pem" 4096
-          openssl pkcs8 -topk8 -inform PEM -outform DER \
-            -in "$HOME/.garmin/developer_key.pem" \
-            -out "$HOME/.garmin/developer_key.der" \
-            -nocrypt
+          test -f "$HOME/.garmin/developer_key.der"
 
       - name: Build IQ package
         run: |
-          "$MONKEYC" -f watch-app/monkey.jungle \
+          monkeyc -f watch-app/monkey.jungle \
             -o /tmp/lt1test.iq \
             -e \
-            -p "$PROJECT_INFO" \
             -y "$HOME/.garmin/developer_key.der"
 
       - name: Upload build artifacts
