@@ -42,27 +42,20 @@ What it does:
   - `codex/issue-<number>-<slug>`
 - comments the branch name back onto the issue
 
-### 3. Watch build CI
+### 3. Watch build
 
-Workflow: `.github/workflows/watch-build.yml`
-
-Current mode:
-
-- runs on a `self-hosted` runner
-- intended to run on your Mac with a working Garmin SDK install
-- uses your local `monkeyc` and your local `~/.garmin/developer_key.der`
+Watch app builds are intentionally kept local.
 
 Why:
 
-- GitHub-hosted runners were not reliable for modern Garmin device targets in this repository
-- local Garmin SDK setup is already known to work
+- the local Garmin SDK setup is already known to work
+- GitHub-hosted Garmin builds were unreliable for this repository
+- a failing hosted build was adding noise instead of improving PR safety
 
-Self-hosted runner prerequisites:
+Current rule:
 
-- macOS machine
-- GitHub Actions self-hosted runner configured for this repository
-- `monkeyc` available in `PATH`
-- valid developer key at `~/.garmin/developer_key.der`
+- build and simulator/device verification for `watch-app/` are manual local steps
+- GitHub Actions in this repository are used only for task automation, not Garmin packaging
 
 ## Manual Step Still Needed
 
@@ -77,6 +70,7 @@ Practical current use:
 3. branch is created automatically
 4. run Codex against that issue/task
 5. open a PR
+6. run the Garmin build locally before merge
 
 ## Next Step If You Want Fuller Automation
 

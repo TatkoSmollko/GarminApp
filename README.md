@@ -77,7 +77,7 @@ Current state:
 
 ## Current Project Gaps
 
-- no GitHub Actions workflow yet
+- no automated Garmin build in GitHub Actions; watch builds stay local on purpose
 - no confirmed automated simulator test flow
 - some build warnings remain in the watch app
 - repository still contains both watch app and backend code, so task boundaries must stay explicit
