@@ -8,106 +8,56 @@ on:
 
 jobs:
   build-watch-app:
-    runs-on: ubuntu-latest
-
-    env:
-      CIQ_SDK_VERSION: "9.1.0"        # must match a version available in connect-iq-sdk-manager
-      CIQ_CLI_VERSION: "0.8.4"        # lindell/connect-iq-sdk-manager-cli
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 1. Install lindell/connect-iq-sdk-manager-cli ───────────────────────
-      # Proper headless CLI wrapper around the Garmin SDK Manager.
-      # The official connectiq-sdk-manager-linux.zip is a GTK GUI app that
-      # requires libwebkit2gtk-4.0 (removed in Ubuntu 24.04+) and cannot
-      # run headlessly in CI.
-      # Using the .deb package directly — no GitHub API call, no rate-limit risk.
-      - name: Install connect-iq-sdk-manager-cli
+      - name: Install Connect IQ SDK
+        run: brew install --cask connectiq
+
+      - name: Generate temporary developer key
         run: |
-          DEB_URL="https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/v${{ env.CIQ_CLI_VERSION }}/connect-iq-sdk-manager-cli_${{ env.CIQ_CLI_VERSION }}_amd64.deb"
-          echo "Downloading: ${DEB_URL}"
-          wget -q "${DEB_URL}" -O /tmp/ciq-cli.deb
-          sudo dpkg -i /tmp/ciq-cli.deb
-          connect-iq-sdk-manager version
-
-      # ── 2. Accept licence + download SDK ────────────────────────────────────
-      - name: Cache Connect IQ SDK
-        id: cache-ciq
-        uses: actions/cache@v4
-        with:
-          path: ~/.config/connect-iq/sdks/${{ env.CIQ_SDK_VERSION }}
-          key: ciq-sdk-${{ env.CIQ_SDK_VERSION }}
-
-      - name: Download SDK ${{ env.CIQ_SDK_VERSION }}
-        if: steps.cache-ciq.outputs.cache-hit != 'true'
-        run: |
-          connect-iq-sdk-manager agreement accept
-          connect-iq-sdk-manager sdk download ${{ env.CIQ_SDK_VERSION }}
-          connect-iq-sdk-manager device download \
-            -d fr955 \
-            -d fr265 \
-            -d fr965 \
-            -d epix2
-
-      - name: Ensure required devices are installed
-        run: |
-          connect-iq-sdk-manager device download \
-            -d fr955 \
-            -d fr265 \
-            -d fr965 \
-            -d epix2
-
-      - name: Set active SDK and add monkeyc to PATH
-        run: |
-          connect-iq-sdk-manager sdk set ${{ env.CIQ_SDK_VERSION }}
-          SDK_BIN=$(connect-iq-sdk-manager sdk current-path --bin)
-          echo "SDK bin: ${SDK_BIN}"
-          echo "${SDK_BIN}" >> $GITHUB_PATH
-
-      - name: Verify SDK
-        run: monkeyc --version
-
-      # ── 3. Temporary developer key (CI only — not the store key) ────────────
-      - name: Generate developer key
-        run: |
-          openssl genrsa -out /tmp/dev_key.pem 4096
+          mkdir -p "$HOME/.garmin"
+          openssl genrsa -out "$HOME/.garmin/developer_key.pem" 4096
           openssl pkcs8 -topk8 -inform PEM -outform DER \
-            -in /tmp/dev_key.pem \
-            -out /tmp/dev_key.der \
+            -in "$HOME/.garmin/developer_key.pem" \
+            -out "$HOME/.garmin/developer_key.der" \
             -nocrypt
 
-      # ── 4. Build all supported devices ──────────────────────────────────────
-      - name: Build — fr955
+      - name: Build FR955 app
         run: |
           monkeyc -f watch-app/monkey.jungle \
             -o /tmp/lt1test-fr955.prg \
-            -d fr955 -w \
-            -y /tmp/dev_key.der
+            -d fr955 \
+            -w \
+            -y "$HOME/.garmin/developer_key.der"
 
-      - name: Build — fr265
+      - name: Build FR265 app
         run: |
           monkeyc -f watch-app/monkey.jungle \
             -o /tmp/lt1test-fr265.prg \
-            -d fr265 -w \
-            -y /tmp/dev_key.der
+            -d fr265 \
+            -w \
+            -y "$HOME/.garmin/developer_key.der"
 
-      - name: Build — fr965
+      - name: Build FR965 app
         run: |
           monkeyc -f watch-app/monkey.jungle \
             -o /tmp/lt1test-fr965.prg \
-            -d fr965 -w \
-            -y /tmp/dev_key.der
+            -d fr965 \
+            -w \
+            -y "$HOME/.garmin/developer_key.der"
 
-      - name: Build — epix2
+      - name: Build epix2 app
         run: |
           monkeyc -f watch-app/monkey.jungle \
             -o /tmp/lt1test-epix2.prg \
-            -d epix2 -w \
-            -y /tmp/dev_key.der
+            -d epix2 \
+            -w \
+            -y "$HOME/.garmin/developer_key.der"
 
-      # ── 5. Upload compiled binaries as artifacts ─────────────────────────────
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
