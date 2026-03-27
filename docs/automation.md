@@ -42,6 +42,28 @@ What it does:
   - `codex/issue-<number>-<slug>`
 - comments the branch name back onto the issue
 
+### 3. Watch build CI
+
+Workflow: `.github/workflows/watch-build.yml`
+
+Current mode:
+
+- runs on a `self-hosted` runner
+- intended to run on your Mac with a working Garmin SDK install
+- uses your local `monkeyc` and your local `~/.garmin/developer_key.der`
+
+Why:
+
+- GitHub-hosted runners were not reliable for modern Garmin device targets in this repository
+- local Garmin SDK setup is already known to work
+
+Self-hosted runner prerequisites:
+
+- macOS machine
+- GitHub Actions self-hosted runner configured for this repository
+- `monkeyc` available in `PATH`
+- valid developer key at `~/.garmin/developer_key.der`
+
 ## Manual Step Still Needed
 
 This repository is now prepared for automation, but one step is still external:
