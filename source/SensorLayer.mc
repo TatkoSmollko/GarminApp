@@ -75,8 +75,7 @@ class SensorLayer {
         var options = {
             :period    => 1,              // callback every 1 second
             :sensorTypes => [
-                Sensor.SENSOR_HEARTRATE,
-                Sensor.SENSOR_ONBOARD_HEARTRATE  // fallback optical
+                Sensor.SENSOR_HEARTRATE
             ],
             :heartBeatIntervals => {
                 :enabled => true
@@ -94,20 +93,33 @@ class SensorLayer {
         isRunning = false;
     }
 
+    // Re-register after the activity session starts so the runtime can bind
+    // the active HR source again inside the recording context.
+    function restartForActivitySession() as Void {
+        _resetSourceDetection();
+
+        if (isRunning) {
+            Sensor.unregisterSensorDataListener();
+            isRunning = false;
+        }
+
+        start();
+    }
+
     // -------------------------------------------------------------------------
     // onSensorData(sensorData)
     // Main sensor callback — called every 1 second by the runtime.
     // -------------------------------------------------------------------------
     function onSensorData(sensorData as Sensor.SensorData) as Void {
         var hrData = sensorData.heartRateData;
-        if (hrData == null) { return; }
-
-        // Process RR intervals (per-beat data from ANT+ HRM).
-        var rrIntervals = hrData.heartBeatIntervals;
-        if (rrIntervals != null && rrIntervals.size() > 0) {
-            _processRealRR(rrIntervals);
-        } else {
-            _processSyntheticRR();
+        if (hrData != null) {
+            // Process RR intervals (per-beat data from an external HRM).
+            var rrIntervals = hrData.heartBeatIntervals;
+            if (rrIntervals != null && rrIntervals.size() > 0) {
+                _processRealRR(rrIntervals);
+            } else {
+                _processSyntheticRR();
+            }
         }
 
         // Update quality score from buffer.
@@ -213,5 +225,13 @@ class SensorLayer {
     // be treated as valid input for DFA/LT1 detection.
     function canUseRRForDfa() as Boolean {
         return hasRRData && isChestStrap && !usingSyntheticRR;
+    }
+
+    private function _resetSourceDetection() as Void {
+        isChestStrap              = false;
+        hasRRData                 = false;
+        usingSyntheticRR          = false;
+        consecutiveRRSamples      = 0;
+        consecutiveOpticalSamples = 0;
     }
 }

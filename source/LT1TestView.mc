@@ -25,6 +25,12 @@ import Toybox.Graphics;
 
 class LT1TestView extends WatchUi.View {
 
+    private const SAFE_LEFT = 42;
+    private const SAFE_RIGHT = 42;
+    private const SAFE_TOP = 34;
+    private const SAFE_BOTTOM = 26;
+    private const ROW_HALF_SPAN = 54;
+
     private var orchestrator as TestOrchestrator;
 
     function initialize(orch as TestOrchestrator) {
@@ -56,85 +62,102 @@ class LT1TestView extends WatchUi.View {
     // IDLE screen
     // =========================================================================
     private function _drawIdle(dc as Graphics.Dc, w as Number, h as Number, cx as Number) as Void {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 80, Graphics.FONT_MEDIUM, "LT1 Test", Graphics.TEXT_JUSTIFY_CENTER);
+        var titleY = SAFE_TOP + 6;
+        var statusY = titleY + 44;
+        var hintY = statusY + 24;
+        var metaY = hintY + 28;
+        var footerY = h - SAFE_BOTTOM - 40;
 
-        // Sensor source status — resolves within ~3 s of app launch.
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx, titleY, Graphics.FONT_MEDIUM, "LT1 Test", Graphics.TEXT_JUSTIFY_CENTER);
+
         var isStrap   = orchestrator.sensor.isChestStrap;
-        var srcLabel  = isStrap ? "Chest Strap ✓" : "No strap detected";
+        var srcLabel  = isStrap ? "Chest Strap" : "Optical HR";
         var srcColour = isStrap ? Graphics.COLOR_GREEN : Graphics.COLOR_YELLOW;
         dc.setColor(srcColour, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 160, Graphics.FONT_SMALL, srcLabel, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, statusY, Graphics.FONT_SMALL, srcLabel, Graphics.TEXT_JUSTIFY_CENTER);
 
         if (!isStrap) {
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 195, Graphics.FONT_TINY, "Use HRM for best results", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, hintY, Graphics.FONT_XTINY, "Best with chest strap", Graphics.TEXT_JUSTIFY_CENTER);
+        } else {
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, hintY, Graphics.FONT_XTINY, "RR stream ready", Graphics.TEXT_JUSTIFY_CENTER);
         }
 
-        // HRmax from StageGuide (confirmed from UserProfile).
         var hrMax = orchestrator.stageGuide.getHRMax();
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 240, Graphics.FONT_TINY, "HRmax: " + hrMax + " bpm", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, metaY, Graphics.FONT_XTINY, "HRmax " + hrMax + " bpm", Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, h - 70, Graphics.FONT_SMALL, "Press START", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, footerY, Graphics.FONT_SMALL, "START to begin", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // =========================================================================
     // RUNNING layout (Warmup / Stage / Paused)
     // =========================================================================
     private function _drawRunningLayout(dc as Graphics.Dc, w as Number, h as Number, cx as Number) as Void {
-        // ---- Top bar: state label + remaining time ----
-        var stateStr = orchestrator.stateLabel();
+        var stateStr = _compactStateLabel();
         var timeStr  = _formatMMSS(orchestrator.timeRemainingInStage());
+        var topStateY = SAFE_TOP - 2;
+        var topTimeY = topStateY + 14;
+        var dividerY = topTimeY + 16;
+        var hrY = dividerY + 8;
+        var bpmY = hrY + 62;
+        var dfaRowY = bpmY + 24;
+        var sigRowY = dfaRowY + 22;
+        var targetY = sigRowY + 24;
+        var footerY = h - SAFE_BOTTOM - 12;
+
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx - 30, 22, Graphics.FONT_SMALL, stateStr, Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.drawText(cx, topStateY, Graphics.FONT_XTINY, stateStr, Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx + 30, 22, Graphics.FONT_SMALL, timeStr, Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(cx, topTimeY, Graphics.FONT_XTINY, timeStr, Graphics.TEXT_JUSTIFY_CENTER);
+        _drawDivider(dc, w, dividerY);
 
-        _drawDivider(dc, w, 50);
-
-        // ---- Large HR ----
         var hrStr = orchestrator.sensor.currentHr > 0
             ? orchestrator.sensor.currentHr.toString()
             : "--";
         dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 60, Graphics.FONT_NUMBER_THAI_HOT, hrStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, hrY, Graphics.FONT_NUMBER_HOT, hrStr, Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 145, Graphics.FONT_TINY, "bpm", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, bpmY, Graphics.FONT_XTINY, "bpm", Graphics.TEXT_JUSTIFY_CENTER);
 
-        // ---- DFA α1 row ----
         var dfa    = orchestrator.latestDfa;
         var dfaStr = dfa > 0.0f ? dfa.format("%.2f") : "---";
-        var windowLabel = orchestrator.isInAnalysisWindow() ? "✓ Analysis" : "↷ Settling";
+        var windowLabel = orchestrator.isInAnalysisWindow() ? "LIVE" : "WAIT";
         var windowColour = orchestrator.isInAnalysisWindow() ? Graphics.COLOR_GREEN : Graphics.COLOR_YELLOW;
+        var qualPct = (orchestrator.sensor.rrQuality * 100.0f).toNumber();
+        var srcLabel = orchestrator.sensor.isChestStrap ? "CHEST" : "OPT";
+        var srcColour = orchestrator.sensor.isChestStrap ? Graphics.COLOR_GREEN : Graphics.COLOR_YELLOW;
+        var leftColX = cx - ROW_HALF_SPAN;
+        var rightColX = cx + ROW_HALF_SPAN;
 
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(18, 168, Graphics.FONT_TINY, "DFA α1", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(leftColX, dfaRowY, Graphics.FONT_XTINY, "DFA", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_dfaColour(dfa), Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx - 10, 168, Graphics.FONT_SMALL, dfaStr, Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(cx, dfaRowY - 2, Graphics.FONT_TINY, dfaStr, Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(windowColour, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(w - 18, 168, Graphics.FONT_TINY, windowLabel, Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.drawText(rightColX, dfaRowY, Graphics.FONT_XTINY, windowLabel, Graphics.TEXT_JUSTIFY_CENTER);
 
-        // ---- Stage guidance row (Phase 2) ----
-        var targetLine = orchestrator.currentStageTargetLine();
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(leftColX, sigRowY, Graphics.FONT_XTINY, "SIG " + qualPct + "%", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.setColor(srcColour, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(rightColX, sigRowY, Graphics.FONT_XTINY, srcLabel, Graphics.TEXT_JUSTIFY_CENTER);
+
+        var targetLine = orchestrator.state == STATE_STAGE ? orchestrator.currentStageTargetLine() : "";
         if (targetLine.length() > 0) {
             dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 200, Graphics.FONT_TINY, targetLine, Graphics.TEXT_JUSTIFY_CENTER);
+            _drawWrappedLine(dc, cx, targetY, targetLine);
         }
 
-        // ---- Live LT1 estimate row ----
-        _drawLT1Row(dc, w, cx, 228);
+        if (orchestrator.state == STATE_STAGE) {
+            _drawLT1Row(dc, w, cx, footerY - 12);
+        }
 
-        _drawDivider(dc, w, 258);
-
-        // ---- Bottom: RR quality + source ----
-        _drawQualityBar(dc, w, cx, 270);
-
-        // ---- Paused overlay ----
         if (orchestrator.state == STATE_PAUSED) {
             dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h - 50, Graphics.FONT_MEDIUM, "PAUSED", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, footerY, Graphics.FONT_SMALL, "PAUSED", Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
 
@@ -142,30 +165,36 @@ class LT1TestView extends WatchUi.View {
     // TRANSITION screen
     // =========================================================================
     private function _drawTransition(dc as Graphics.Dc, w as Number, h as Number, cx as Number) as Void {
+        var titleY = SAFE_TOP - 2;
+        var countY = titleY + 26;
+        var unitY = countY + 58;
+        var dividerY = unitY + 18;
+        var nextLabelY = dividerY + 14;
+        var targetY = nextLabelY + 16;
+        var hrY = targetY + 40;
+
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 50, Graphics.FONT_MEDIUM, "Rest", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, titleY, Graphics.FONT_SMALL, "Rest", Graphics.TEXT_JUSTIFY_CENTER);
 
         var remaining = orchestrator.timeRemainingInStage();
         dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 100, Graphics.FONT_NUMBER_THAI_HOT, remaining.toString(), Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, countY, Graphics.FONT_NUMBER_HOT, remaining.toString(), Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 190, Graphics.FONT_TINY, "seconds", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, unitY, Graphics.FONT_XTINY, "sec", Graphics.TEXT_JUSTIFY_CENTER);
 
-        _drawDivider(dc, w, 220);
+        _drawDivider(dc, w, dividerY);
 
-        // Next stage target guidance — the key Phase 2 feature during transition.
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 235, Graphics.FONT_TINY, "Next stage target:", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, nextLabelY, Graphics.FONT_XTINY, "Next Stage", Graphics.TEXT_JUSTIFY_CENTER);
         var nextTarget = orchestrator.nextStageTargetLine();
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 260, Graphics.FONT_TINY, nextTarget, Graphics.TEXT_JUSTIFY_CENTER);
+        _drawWrappedLine(dc, cx, targetY, nextTarget);
 
-        // Live HR during rest.
         var hrStr = orchestrator.sensor.currentHr > 0
             ? orchestrator.sensor.currentHr.toString() + " bpm"
             : "--- bpm";
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 315, Graphics.FONT_SMALL, hrStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, hrY, Graphics.FONT_XTINY, hrStr, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // =========================================================================
@@ -173,10 +202,12 @@ class LT1TestView extends WatchUi.View {
     // =========================================================================
     private function _drawComplete(dc as Graphics.Dc, w as Number, h as Number, cx as Number) as Void {
         var result = orchestrator.finalResult;
+        var titleY = SAFE_TOP - 2;
+        var dividerY = titleY + 30;
 
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 30, Graphics.FONT_SMALL, "Test Complete", Graphics.TEXT_JUSTIFY_CENTER);
-        _drawDivider(dc, w, 60);
+        dc.drawText(cx, titleY, Graphics.FONT_SMALL, "Test Complete", Graphics.TEXT_JUSTIFY_CENTER);
+        _drawDivider(dc, w, dividerY);
 
         if (result == null) {
             dc.drawText(cx, h / 2, Graphics.FONT_SMALL, "Processing...", Graphics.TEXT_JUSTIFY_CENTER);
@@ -184,57 +215,57 @@ class LT1TestView extends WatchUi.View {
         }
 
         if (result.isDetected()) {
-            // LT1 HR — large, centred.
             dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 75, Graphics.FONT_TINY, "LT1 Detected", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, dividerY + 14, Graphics.FONT_TINY, "LT1 Found", Graphics.TEXT_JUSTIFY_CENTER);
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 100, Graphics.FONT_NUMBER_THAI_HOT,
+            dc.drawText(cx, dividerY + 38, Graphics.FONT_NUMBER_THAI_HOT,
                 result.lt1Hr.format("%.0f"), Graphics.TEXT_JUSTIFY_CENTER);
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 185, Graphics.FONT_TINY, "bpm", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, dividerY + 122, Graphics.FONT_TINY, "bpm", Graphics.TEXT_JUSTIFY_CENTER);
 
-            // Pace (if available).
             if (result.lt1Pace > 0.0f) {
                 dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(cx, 210, Graphics.FONT_SMALL,
+                dc.drawText(cx, dividerY + 144, Graphics.FONT_SMALL,
                     _paceSmToMinKm(result.lt1Pace) + " /km", Graphics.TEXT_JUSTIFY_CENTER);
             }
 
-            // Power (if available).
             if (result.lt1Power > 0.0f) {
-                dc.drawText(cx, 240, Graphics.FONT_SMALL,
+                dc.drawText(cx, dividerY + 170, Graphics.FONT_SMALL,
                     result.lt1Power.format("%.0f") + " W", Graphics.TEXT_JUSTIFY_CENTER);
             }
 
-            // Confidence.
             var confColour = result.confidenceScore >= 0.75f ? Graphics.COLOR_GREEN :
                              result.confidenceScore >= 0.45f ? Graphics.COLOR_YELLOW :
                                                                Graphics.COLOR_RED;
             dc.setColor(confColour, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 280, Graphics.FONT_SMALL,
-                "Confidence: " + result.confidenceLabel(), Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, dividerY + 198, Graphics.FONT_XTINY,
+                "Confidence " + result.confidenceLabel(), Graphics.TEXT_JUSTIFY_CENTER);
 
         } else {
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 140, Graphics.FONT_MEDIUM, "Not detected", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, dividerY + 70, Graphics.FONT_MEDIUM, "No LT1 Yet", Graphics.TEXT_JUSTIFY_CENTER);
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 200, Graphics.FONT_TINY, "Check signal quality", Graphics.TEXT_JUSTIFY_CENTER);
-            dc.drawText(cx, 225, Graphics.FONT_TINY, "or repeat test", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, dividerY + 112, Graphics.FONT_XTINY, "Signal too weak", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, dividerY + 128, Graphics.FONT_XTINY, "Retry with chest strap", Graphics.TEXT_JUSTIFY_CENTER);
+
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h - SAFE_BOTTOM - 10, Graphics.FONT_XTINY, "START to exit", Graphics.TEXT_JUSTIFY_CENTER);
+            return;
         }
 
-        _drawDivider(dc, w, 320);
+        _drawDivider(dc, w, h - SAFE_BOTTOM - 58);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 335, Graphics.FONT_TINY,
-            "RR qual: " + (result.signalQualityOverall * 100.0f).format("%.0f") + "%",
+        dc.drawText(cx, h - SAFE_BOTTOM - 48, Graphics.FONT_XTINY,
+            "Signal " + (result.signalQualityOverall * 100.0f).format("%.0f") + "%",
             Graphics.TEXT_JUSTIFY_CENTER);
 
-        var srcLabel = result.hrSourceIsChestStrap ? "Chest strap" : "Optical ⚠";
+        var srcLabel = result.hrSourceIsChestStrap ? "Chest strap" : "Optical HR";
         dc.setColor(result.hrSourceIsChestStrap ? Graphics.COLOR_GREEN : Graphics.COLOR_YELLOW,
                     Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 358, Graphics.FONT_TINY, srcLabel, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, h - SAFE_BOTTOM - 30, Graphics.FONT_XTINY, srcLabel, Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, h - 28, Graphics.FONT_TINY, "START to exit", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, h - SAFE_BOTTOM - 10, Graphics.FONT_XTINY, "START to exit", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // =========================================================================
@@ -242,33 +273,58 @@ class LT1TestView extends WatchUi.View {
     // =========================================================================
 
     private function _drawLT1Row(dc as Graphics.Dc, w as Number, cx as Number, y as Number) as Void {
-        var result = orchestrator.finalResult;
-        // Show provisional detection from LT1Detector if stages are completing.
-        // (finalResult is only set at STATE_COMPLETE; during the test we show
-        //  nothing for this row until detection is available via lt1Detector.)
-        // For the MVP we simply show dashes during the test.
-        // TODO Phase 3: run provisional detect() after each stage and display.
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(18, y, Graphics.FONT_TINY, "LT1", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(cx - ROW_HALF_SPAN, y, Graphics.FONT_XTINY, "LT1", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, y, Graphics.FONT_TINY, "—", Graphics.TEXT_JUSTIFY_CENTER);
-    }
-
-    private function _drawQualityBar(dc as Graphics.Dc, w as Number, cx as Number, y as Number) as Void {
-        var qualPct   = (orchestrator.sensor.rrQuality * 100.0f).toNumber();
-        var isStrap   = orchestrator.sensor.isChestStrap;
-        var srcLabel  = isStrap ? "CHEST STRAP" : "OPTICAL ⚠";
-        var srcColour = isStrap ? Graphics.COLOR_GREEN : Graphics.COLOR_YELLOW;
-
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(18, y, Graphics.FONT_TINY, "RR " + qualPct + "%", Graphics.TEXT_JUSTIFY_LEFT);
-        dc.setColor(srcColour, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(w - 18, y, Graphics.FONT_TINY, srcLabel, Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.drawText(cx + 6, y, Graphics.FONT_XTINY, "--", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     private function _drawDivider(dc as Graphics.Dc, w as Number, y as Number) as Void {
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(30, y, w - 30, y);
+        dc.drawLine(SAFE_LEFT, y, w - SAFE_RIGHT, y);
+    }
+
+    private function _drawWrappedLine(dc as Graphics.Dc, cx as Number, y as Number, line as String) as Void {
+        if (line.length() <= 16) {
+            dc.drawText(cx, y, Graphics.FONT_XTINY, line, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+
+        var split = -1;
+        var half = line.length() / 2;
+        for (var i = half; i < line.length(); i++) {
+            if (line.substring(i, 1) == " ") {
+                split = i;
+                break;
+            }
+        }
+
+        if (split <= 0) {
+            dc.drawText(cx, y, Graphics.FONT_XTINY, line, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+
+        var top = line.substring(0, split);
+        // substring(start, length) — guard against empty remainder
+        var remainingLen = line.length() - (split + 1);
+        if (remainingLen <= 0) {
+            dc.drawText(cx, y, Graphics.FONT_XTINY, line, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+        var bottom = line.substring(split + 1, remainingLen);
+        dc.drawText(cx, y, Graphics.FONT_XTINY, top, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, y + 11, Graphics.FONT_XTINY, bottom, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
+    private function _compactStateLabel() as String {
+        switch (orchestrator.state) {
+            case STATE_WARMUP: return "WU";
+            case STATE_STAGE: return "S" + orchestrator.currentStage;
+            case STATE_TRANSITION: return "REST";
+            case STATE_PAUSED: return "PAUSE";
+            case STATE_COMPLETE: return "DONE";
+            default: return orchestrator.stateLabel();
+        }
     }
 
     // =========================================================================

@@ -91,12 +91,12 @@ class DFAComputer {
     // -------------------------------------------------------------------------
     function compute(rrBuffer as RRBuffer) as Float {
         var n = rrBuffer.samplesAvailable();
-        if (n < 64) { return -1.0f; }  // hard minimum for any DFA estimate
+        if (n < 16) { return -1.0f; }  // demo-friendly minimum; real testing should use larger windows
         if (n > MAX_N) { n = MAX_N; }
 
         // Fetch clean RR window from buffer.
         var filled = rrBuffer.copyWindow(workWindow, n);
-        if (filled < 64) { return -1.0f; }
+        if (filled < 16) { return -1.0f; }
         n = filled;
 
         // Step 1: compute mean and integrate.

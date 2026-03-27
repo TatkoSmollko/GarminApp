@@ -38,11 +38,11 @@ enum OrchestratorState {
 class TestOrchestrator {
 
     // ---- Protocol configuration ----
-    private const WARMUP_DURATION_S     = 600;    // 10 minutes
-    private const STAGE_DURATION_S      = 240;    //  4 minutes
-    private const TRANSITION_DURATION_S = 30;     // 30 seconds between stages
-    private const NUM_STAGES            = 6;
-    private const SETTLING_DURATION_S   = 120;    // 2 minutes settling per stage
+    private const WARMUP_DURATION_S      = 600;   // 10 minutes
+    private const STAGE_DURATION_S       = 240;   //  4 minutes
+    private const TRANSITION_DURATION_S  = 30;    // 30 seconds between stages
+    private const NUM_STAGES             = 6;
+    private const SETTLING_DURATION_S    = 120;   // 2 minutes settling per stage
     private const DFA_UPDATE_INTERVAL_MS = 30000; // 30 seconds
 
     // AppStorage key — the Connect IQ companion app reads this key after sync.
@@ -153,6 +153,8 @@ class TestOrchestrator {
             return;
         }
 
+        sensor.restartForActivitySession();
+
         _enterWarmup();
     }
 
@@ -179,6 +181,48 @@ class TestOrchestrator {
         dfaTimer.stop();
         sensor.stop();
         _completeTest();
+    }
+
+    // -------------------------------------------------------------------------
+    // skipToNextStage()
+    //
+    // Called when the athlete presses the LAP button during a test.
+    // Immediately advances to the next phase without waiting for the timer:
+    //   Warmup     → Stage 1
+    //   Stage N    → Transition  (or Complete if it was the last stage)
+    //   Transition → Stage N+1
+    //
+    // Stage data accumulated so far is still finalised normally so no data
+    // is lost — the stage will simply have fewer analysis windows.
+    // -------------------------------------------------------------------------
+    function skipToNextStage() as Void {
+        switch (state) {
+            case STATE_WARMUP:
+                // Stop both timers; _enterStage will restart them.
+                secondTimer.stop();
+                dfaTimer.stop();
+                _enterStage(1);
+                break;
+
+            case STATE_STAGE:
+                // _enterTransition handles timer teardown + _finaliseCurrentStage.
+                // stopTest handles it for the last stage.
+                if (currentStage < NUM_STAGES) {
+                    _enterTransition();
+                } else {
+                    stopTest();
+                }
+                break;
+
+            case STATE_TRANSITION:
+                // Only the secondTimer runs during transition.
+                secondTimer.stop();
+                _enterStage(currentStage + 1);
+                break;
+
+            default:
+                break;
+        }
     }
 
     function abortTest() as Void {

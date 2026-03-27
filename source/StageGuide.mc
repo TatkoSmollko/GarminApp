@@ -45,6 +45,15 @@ class StageGuide {
         "Very Hard"        // ~RPE 16–17
     ];
 
+    private const STAGE_RPE_SHORT = [
+        "VEasy",  // stage 1 — Very Easy
+        "Easy",   // stage 2 — Easy
+        "Mod",    // stage 3 — Moderate
+        "Upper",  // stage 4 — Upper aerobic
+        "Hard",   // stage 5 — Near LT1
+        "VHard"   // stage 6 — Above LT1
+    ];
+
     // Per-stage power multipliers relative to stage 1 baseline.
     // A 5% increment per stage is a conservative step-test design for running power.
     private const STAGE_POWER_MULT = [
@@ -158,12 +167,13 @@ class StageGuide {
     // -------------------------------------------------------------------------
     function formatTargetLine(stageNum as Number) as String {
         var range = getTargetHrRange(stageNum);
-        var rpe   = getRPELabel(stageNum);
+        var idx   = stageNum - 1;
+        var rpe   = (idx >= 0 && idx < 6) ? STAGE_RPE_SHORT[idx] : getRPELabel(stageNum);
         var power = getPowerTarget(stageNum);
 
-        var line = range[0].toString() + "–" + range[1].toString() + " bpm | " + rpe;
+        var line = range[0].toString() + "-" + range[1].toString() + " " + rpe;
         if (power > 0.0f) {
-            line = line + " | " + power.format("%.0f") + "W";
+            line = line + " " + power.format("%.0f") + "W";
         }
         return line;
     }
