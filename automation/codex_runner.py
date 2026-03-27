@@ -96,11 +96,18 @@ def slugify(value: str) -> str:
     value = value.lower().strip()
     value = re.sub(r"[^a-z0-9]+", "-", value)
     value = re.sub(r"-{2,}", "-", value).strip("-")
-    return value[:40]
+    return value[:40].strip("-")
 
 
 def branch_name_for_issue(issue: Issue) -> str:
     return f"codex/issue-{issue.number}-{slugify(issue.title)}"
+
+
+def legacy_branch_name_for_issue(issue: Issue) -> str:
+    legacy_slug = re.sub(r"[^a-z0-9]+", "-", issue.title.lower().strip())
+    legacy_slug = re.sub(r"-{2,}", "-", legacy_slug).strip("-")
+    legacy_slug = legacy_slug[:40]
+    return f"codex/issue-{issue.number}-{legacy_slug}"
 
 
 def fetch_open_issues() -> list[Issue]:
@@ -176,14 +183,30 @@ def ensure_clean_checkout(repo_dir: Path) -> None:
         raise RuntimeError("working tree is not clean; refusing to start automated Codex task")
 
 
+def remote_branch_exists(repo_dir: Path, branch_name: str) -> bool:
+    exists = run(["git", "ls-remote", "--exit-code", "--heads", "origin", branch_name], cwd=repo_dir)
+    return exists.returncode == 0
+
+
+def resolve_branch_name(repo_dir: Path, issue: Issue) -> str:
+    primary = branch_name_for_issue(issue)
+    if remote_branch_exists(repo_dir, primary):
+        return primary
+
+    legacy = legacy_branch_name_for_issue(issue)
+    if legacy != primary and remote_branch_exists(repo_dir, legacy):
+        return legacy
+
+    return primary
+
+
 def checkout_branch(repo_dir: Path, branch_name: str) -> None:
     run(["git", "fetch", "origin"], cwd=repo_dir)
-    exists = run(["git", "ls-remote", "--exit-code", "--heads", "origin", branch_name], cwd=repo_dir)
-    if exists.returncode != 0:
+    if not remote_branch_exists(repo_dir, branch_name):
         raise RuntimeError(f"remote branch does not exist: {branch_name}")
 
-    local_exists = run(["git", "show-ref", "--verify", f"refs/heads/{branch_name}"], cwd=repo_dir)
-    if local_exists.returncode == 0:
+    local_exists = run(["git", "branch", "--list", branch_name], cwd=repo_dir, capture=True)
+    if local_exists.returncode == 0 and local_exists.stdout.strip():
         result = run(["git", "checkout", branch_name], cwd=repo_dir, capture=True)
     else:
         result = run(["git", "checkout", "-b", branch_name, f"origin/{branch_name}"], cwd=repo_dir, capture=True)
@@ -294,7 +317,7 @@ def process_issue(repo_dir: Path, issue: Issue, dry_run: bool) -> None:
     done_label = os.getenv("CODEX_DONE_LABEL", "codex-done")
     failed_label = os.getenv("CODEX_FAILED_LABEL", "codex-failed")
 
-    branch_name = branch_name_for_issue(issue)
+    branch_name = resolve_branch_name(repo_dir, issue)
 
     if dry_run:
         print(json.dumps({"mode": "dry-run", "issue": issue.number, "branch": branch_name}))

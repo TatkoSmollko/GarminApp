@@ -29,7 +29,7 @@ jobs:
         run: |
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           TITLE="${{ github.event.issue.title }}"
-          SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//' | cut -c1-40)
+          SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//' | cut -c1-40 | sed 's/^-//' | sed 's/-$//')
           BRANCH="codex/issue-${ISSUE_NUMBER}-${SLUG}"
           echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
 
