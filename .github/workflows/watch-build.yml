@@ -48,7 +48,10 @@ jobs:
 
           echo "SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "MONKEYC=$SDK_ROOT/bin/monkeyc" >> "$GITHUB_ENV"
+          echo "PROJECT_INFO=$SDK_ROOT/bin/projectInfo.xml" >> "$GITHUB_ENV"
+          echo "Using SDK_ROOT=$SDK_ROOT"
           "$SDK_ROOT/bin/monkeyc" --version
+          ls -l "$SDK_ROOT/bin/projectInfo.xml"
 
       - name: Generate temporary developer key
         run: |
@@ -64,6 +67,7 @@ jobs:
           "$MONKEYC" -f watch-app/monkey.jungle \
             -o /tmp/lt1test.iq \
             -e \
+            -p "$PROJECT_INFO" \
             -y "$HOME/.garmin/developer_key.der"
 
       - name: Upload build artifacts
