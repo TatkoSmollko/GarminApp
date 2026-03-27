@@ -50,12 +50,13 @@ class TestOrchestrator {
 
     // ---- Module references ----
     // sensor is public so View and Delegate can read HR, isChestStrap, etc.
-    var sensor          as SensorLayer;
+    var sensor              as SensorLayer;
     private var rrBuffer    as RRBuffer;
     private var dfaComputer as DFAComputer;
     private var lt1Detector as LT1Detector;
     private var fitRecorder as FITRecorder;
-    var stageGuide      as StageGuide;   // public — View reads targets
+    private var uploader    as UploadManager;
+    var stageGuide          as StageGuide;   // public — View reads targets
 
     // ---- State machine ----
     var state          as OrchestratorState;
@@ -101,13 +102,15 @@ class TestOrchestrator {
                         dfaComputer_ as DFAComputer,
                         lt1Detector_ as LT1Detector,
                         fitRecorder_ as FITRecorder,
-                        stageGuide_  as StageGuide) {
+                        stageGuide_  as StageGuide,
+                        uploader_    as UploadManager) {
         sensor      = sensor_;
         rrBuffer    = rrBuffer_;
         dfaComputer = dfaComputer_;
         lt1Detector = lt1Detector_;
         fitRecorder = fitRecorder_;
         stageGuide  = stageGuide_;
+        uploader    = uploader_;
 
         state              = STATE_IDLE;
         currentStage       = 0;
@@ -141,6 +144,7 @@ class TestOrchestrator {
 
         _resetTestState();
         rrBuffer.reset();
+        uploader.reset();
 
         // Sensor may already be running (started in onStart for source detection).
         // start() is idempotent.
@@ -312,6 +316,9 @@ class TestOrchestrator {
         fitRecorder.stopSession();
         sensor.stop();
 
+        // ---- Upload to backend (email report to user) ----
+        uploader.uploadResult(finalResult, stageResults, NUM_STAGES);
+
         // ---- Persist result to AppStorage ----
         // The Connect IQ companion SDK can read Application.Storage values
         // from a paired phone after the watch syncs.  The mobile app picks up
@@ -333,6 +340,9 @@ class TestOrchestrator {
         stageElapsed++;
         totalQualAccum   += sensor.rrQuality;
         totalQualSamples++;
+
+        // Feed HR + pace into uploader every HR_SAMPLE_EVERY seconds.
+        uploader.onSecondTick(sensor.currentHr, sensor.currentPace);
 
         switch (state) {
             case STATE_WARMUP:
@@ -373,6 +383,9 @@ class TestOrchestrator {
         latestDfa = dfa;
 
         fitRecorder.writeRecordFields(dfa, quality, stageNum, isValid);
+
+        // Feed DFA reading into uploader timeseries.
+        uploader.onDFATick(dfa, stageNum, quality);
 
         if (isValid) {
             stageHrAccum    += sensor.currentHr.toFloat();

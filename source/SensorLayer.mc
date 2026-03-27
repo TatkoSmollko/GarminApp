@@ -43,6 +43,7 @@ class SensorLayer {
 
     // ---- Private references ----
     private var rrBuffer   as RRBuffer;
+    private var uploader   as UploadManager or Null;
     private var isRunning  as Boolean;
 
     // Track how many consecutive samples came from each source so we don't
@@ -51,8 +52,9 @@ class SensorLayer {
     private var consecutiveOpticalSamples as Number;
     private const SOURCE_CONFIRM_THRESHOLD = 3;  // samples before flipping label
 
-    function initialize(buffer as RRBuffer) {
+    function initialize(buffer as RRBuffer, uploaderRef as UploadManager or Null) {
         rrBuffer                    = buffer;
+        uploader                    = uploaderRef;
         currentHr                   = 0;
         currentPace                 = 0.0f;
         currentPower                = 0.0f;
@@ -149,6 +151,10 @@ class SensorLayer {
             var rr = rrArray[i];
             if (rr != null) {
                 rrBuffer.addInterval(rr);
+                // Forward raw RR to UploadManager for server-side DFA recomputation.
+                if (uploader != null) {
+                    uploader.onRRInterval(rr);
+                }
             }
         }
     }

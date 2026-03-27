@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- settings.xml
+     Defines the Settings UI that appears in the Garmin Connect mobile app.
+     Each <setting> maps to a property defined in properties.xml.
+     The UI is rendered natively by the Garmin Connect app — no code needed.
+-->
+<settings>
+
+    <setting propertyKey="@Properties.userEmail"
+             title="@Strings.SettingEmailTitle">
+        <settingConfig type="alphanumeric"/>
+        <settingDescription>@Strings.SettingEmailDesc</settingDescription>
+    </setting>
+
+    <setting propertyKey="@Properties.apiEndpoint"
+             title="@Strings.SettingApiTitle">
+        <settingConfig type="alphanumeric"/>
+        <settingDescription>@Strings.SettingApiDesc</settingDescription>
+    </setting>
+
+</settings>
