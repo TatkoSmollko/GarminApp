@@ -21,6 +21,11 @@ jobs:
         run: |
           SDK_ROOT=""
 
+          if [ -z "$SDK_ROOT" ]; then
+            SDK_ROOT="$(find /opt/homebrew/Caskroom/connectiq /usr/local/Caskroom/connectiq -type f -name monkeyc 2>/dev/null | head -n 1 | xargs dirname)"
+            SDK_ROOT="${SDK_ROOT%/bin}"
+          fi
+
           for CFG in \
             "$HOME/.Garmin/ConnectIQ/current-sdk.cfg" \
             "$HOME/Library/Application Support/Garmin/ConnectIQ/current-sdk.cfg"
@@ -33,11 +38,6 @@ jobs:
 
           if [ -z "$SDK_ROOT" ] && [ -d /Applications/ConnectIQ.app ]; then
             SDK_ROOT="$(find /Applications/ConnectIQ.app -type f -name monkeyc | head -n 1 | xargs dirname)"
-            SDK_ROOT="${SDK_ROOT%/bin}"
-          fi
-
-          if [ -z "$SDK_ROOT" ]; then
-            SDK_ROOT="$(find /opt/homebrew/Caskroom /usr/local/Caskroom -type f -name monkeyc 2>/dev/null | head -n 1 | xargs dirname)"
             SDK_ROOT="${SDK_ROOT%/bin}"
           fi
 
