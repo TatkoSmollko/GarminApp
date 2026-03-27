@@ -16,6 +16,7 @@ backend/pipeline/__pycache__/
 backend/pipeline/**/__pycache__/
 backend/pipeline/.env
 backend/pipeline/output/
+automation/__pycache__/
 
 # macOS
 .DS_Store
