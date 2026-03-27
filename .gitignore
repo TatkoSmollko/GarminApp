@@ -3,3 +3,18 @@ dev_key.pem
 dev_key_rsa.der
 dev_key_rsa.pem
 *.prg
+
+# Build artefacts
+bin/
+dist/
+
+# Python
+pipeline/.venv/
+pipeline/__pycache__/
+pipeline/**/__pycache__/
+pipeline/.env
+pipeline/output/
+
+# macOS
+.DS_Store
+source/.DS_Store
