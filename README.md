@@ -82,6 +82,19 @@ Current state:
 - some build warnings remain in the watch app
 - repository still contains both watch app and backend code, so task boundaries must stay explicit
 
+## Task Automation
+
+Repository automation scaffolding is now available for:
+
+- Trello intake into GitHub Issues
+- automatic branch creation from labeled issues
+
+See:
+
+- [automation notes](/Users/tomasvago/garminApp/docs/automation.md)
+- [Trello intake workflow](/Users/tomasvago/garminApp/.github/workflows/trello-intake.yml)
+- [issue branch workflow](/Users/tomasvago/garminApp/.github/workflows/issue-branch.yml)
+
 ## Suggested Development Flow
 
 1. Create a small branch for one task.
