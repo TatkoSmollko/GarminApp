@@ -18,6 +18,7 @@ Optional environment:
 - CODEX_DONE_LABEL          default: codex-done
 - CODEX_FAILED_LABEL        default: codex-failed
 - CODEX_MODEL               optional Codex model override
+- CODEX_BYPASS_SANDBOX      default: false
 - CODEX_DRY_RUN             default: false
 """
 
@@ -268,6 +269,21 @@ def resolve_codex_bin() -> str:
     raise RuntimeError("codex binary not found; set CODEX_BIN or add codex to PATH")
 
 
+def message_indicates_runner_block(message: str) -> bool:
+    lower = message.lower()
+    return any(
+        token in lower
+        for token in [
+            "index.lock",
+            "sandbox restriction",
+            "sandboxed",
+            "operation not permitted",
+            "permission denied",
+            "could not create",
+        ]
+    )
+
+
 def run_codex(repo_dir: Path, issue: Issue, branch_name: str) -> tuple[int, str]:
     prompt = build_prompt(issue, branch_name)
     with tempfile.NamedTemporaryFile("w+", suffix=".txt", delete=False) as output_file:
@@ -282,6 +298,8 @@ def run_codex(repo_dir: Path, issue: Issue, branch_name: str) -> tuple[int, str]
         "--output-last-message",
         output_path,
     ]
+    if _bool_env("CODEX_BYPASS_SANDBOX", default=False):
+        cmd.append("--dangerously-bypass-approvals-and-sandbox")
 
     model = os.getenv("CODEX_MODEL")
     if model:
@@ -363,7 +381,7 @@ def process_issue(repo_dir: Path, issue: Issue, dry_run: bool) -> None:
         ensure_clean_checkout(repo_dir)
         checkout_branch(repo_dir, branch_name)
         exit_code, final_message = run_codex(repo_dir, issue, branch_name)
-        if exit_code != 0:
+        if exit_code != 0 or message_indicates_runner_block(final_message):
             failure_kind = classify_failure(final_message)
             add_labels(issue.number, [failed_label])
             remove_label(issue.number, running_label)

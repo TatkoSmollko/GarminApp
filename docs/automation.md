@@ -85,6 +85,7 @@ Required local setup:
 - `codex` installed and logged in on the Mac
 - git push access for the repository
 - a GitHub token with issue read/write access exported as `GITHUB_TOKEN`
+- if the runner should allow Codex to commit/push automatically, set `CODEX_BYPASS_SANDBOX=true`
 
 Minimal run:
 
