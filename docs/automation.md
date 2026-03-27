@@ -62,15 +62,53 @@ Current rule:
 This repository is now prepared for automation, but one step is still external:
 
 - Codex execution itself is not yet triggered automatically by GitHub Actions from this repository alone
+- a local Codex runner can now be used on your Mac to pick up `codex-ready` issues and execute them
 
 Practical current use:
 
 1. Trello creates the issue automatically
 2. add the label `codex-ready`
 3. branch is created automatically
-4. run Codex against that issue/task
-5. open a PR
+4. local `automation/codex_runner.py` picks up the issue
+5. Codex works on the created branch on your Mac
 6. run the Garmin build locally before merge
+
+## Local Codex Runner
+
+Files:
+
+- `automation/codex_runner.py`
+- `automation/codex_runner.env.example`
+
+Required local setup:
+
+- `codex` installed and logged in on the Mac
+- git push access for the repository
+- a GitHub token with issue read/write access exported as `GITHUB_TOKEN`
+
+Minimal run:
+
+```sh
+export $(grep -v '^#' automation/codex_runner.env.example | xargs)
+python3 automation/codex_runner.py --once
+```
+
+Continuous polling:
+
+```sh
+export $(grep -v '^#' automation/codex_runner.env.example | xargs)
+python3 automation/codex_runner.py
+```
+
+Runner behavior:
+
+- looks for open issues labeled `codex-ready`
+- skips issues already labeled `codex-running`, `codex-done`, or `codex-failed`
+- claims one issue at a time
+- checks out the branch created by `issue-branch.yml`
+- runs `codex exec`
+- commits and pushes changes if any were produced
+- comments back onto the issue with the result
 
 ## Next Step If You Want Fuller Automation
 

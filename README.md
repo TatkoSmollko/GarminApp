@@ -88,6 +88,7 @@ Repository automation scaffolding is now available for:
 
 - Trello intake into GitHub Issues
 - automatic branch creation from labeled issues
+- local Codex execution from labeled issues via `automation/codex_runner.py`
 
 See:
 
