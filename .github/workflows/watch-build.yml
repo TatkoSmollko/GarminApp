@@ -17,6 +17,13 @@ jobs:
       - name: Install Connect IQ SDK
         run: brew install --cask connectiq
 
+      - name: Resolve SDK tools
+        run: |
+          SDK_ROOT="$(cat "$HOME/Library/Application Support/Garmin/ConnectIQ/current-sdk.cfg")"
+          echo "SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "MONKEYC=$SDK_ROOT/bin/monkeyc" >> "$GITHUB_ENV"
+          "$SDK_ROOT/bin/monkeyc" --version
+
       - name: Generate temporary developer key
         run: |
           mkdir -p "$HOME/.garmin"
@@ -28,7 +35,7 @@ jobs:
 
       - name: Build FR955 app
         run: |
-          monkeyc -f watch-app/monkey.jungle \
+          "$MONKEYC" -f watch-app/monkey.jungle \
             -o /tmp/lt1test-fr955.prg \
             -d fr955 \
             -w \
@@ -36,7 +43,7 @@ jobs:
 
       - name: Build FR265 app
         run: |
-          monkeyc -f watch-app/monkey.jungle \
+          "$MONKEYC" -f watch-app/monkey.jungle \
             -o /tmp/lt1test-fr265.prg \
             -d fr265 \
             -w \
@@ -44,7 +51,7 @@ jobs:
 
       - name: Build FR965 app
         run: |
-          monkeyc -f watch-app/monkey.jungle \
+          "$MONKEYC" -f watch-app/monkey.jungle \
             -o /tmp/lt1test-fr965.prg \
             -d fr965 \
             -w \
@@ -52,7 +59,7 @@ jobs:
 
       - name: Build epix2 app
         run: |
-          monkeyc -f watch-app/monkey.jungle \
+          "$MONKEYC" -f watch-app/monkey.jungle \
             -o /tmp/lt1test-epix2.prg \
             -d epix2 \
             -w \
