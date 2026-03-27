@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -251,13 +252,29 @@ def build_prompt(issue: Issue, branch_name: str) -> str:
     )
 
 
+def resolve_codex_bin() -> str:
+    configured = os.getenv("CODEX_BIN")
+    if configured:
+        return configured
+
+    resolved = shutil.which("codex")
+    if resolved:
+        return resolved
+
+    macos_app_bin = "/Applications/Codex.app/Contents/Resources/codex"
+    if Path(macos_app_bin).exists():
+        return macos_app_bin
+
+    raise RuntimeError("codex binary not found; set CODEX_BIN or add codex to PATH")
+
+
 def run_codex(repo_dir: Path, issue: Issue, branch_name: str) -> tuple[int, str]:
     prompt = build_prompt(issue, branch_name)
     with tempfile.NamedTemporaryFile("w+", suffix=".txt", delete=False) as output_file:
         output_path = output_file.name
 
     cmd = [
-        "codex",
+        resolve_codex_bin(),
         "exec",
         "--full-auto",
         "--cd",
