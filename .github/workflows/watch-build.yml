@@ -19,7 +19,33 @@ jobs:
 
       - name: Resolve SDK tools
         run: |
-          SDK_ROOT="$(cat "$HOME/Library/Application Support/Garmin/ConnectIQ/current-sdk.cfg")"
+          SDK_ROOT=""
+
+          for CFG in \
+            "$HOME/.Garmin/ConnectIQ/current-sdk.cfg" \
+            "$HOME/Library/Application Support/Garmin/ConnectIQ/current-sdk.cfg"
+          do
+            if [ -f "$CFG" ]; then
+              SDK_ROOT="$(cat "$CFG")"
+              break
+            fi
+          done
+
+          if [ -z "$SDK_ROOT" ] && [ -d /Applications/ConnectIQ.app ]; then
+            SDK_ROOT="$(find /Applications/ConnectIQ.app -type f -name monkeyc | head -n 1 | xargs dirname)"
+            SDK_ROOT="${SDK_ROOT%/bin}"
+          fi
+
+          if [ -z "$SDK_ROOT" ]; then
+            SDK_ROOT="$(find /opt/homebrew/Caskroom /usr/local/Caskroom -type f -name monkeyc 2>/dev/null | head -n 1 | xargs dirname)"
+            SDK_ROOT="${SDK_ROOT%/bin}"
+          fi
+
+          if [ -z "$SDK_ROOT" ]; then
+            echo "Unable to locate Connect IQ SDK installation"
+            exit 1
+          fi
+
           echo "SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "MONKEYC=$SDK_ROOT/bin/monkeyc" >> "$GITHUB_ENV"
           "$SDK_ROOT/bin/monkeyc" --version
