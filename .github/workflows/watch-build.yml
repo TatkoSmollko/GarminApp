@@ -45,6 +45,11 @@ jobs:
         run: |
           connect-iq-sdk-manager agreement accept
           connect-iq-sdk-manager sdk download ${{ env.CIQ_SDK_VERSION }}
+          connect-iq-sdk-manager device download fr955 fr265 fr965 epix2
+
+      - name: Ensure required devices are installed
+        run: |
+          connect-iq-sdk-manager device download fr955 fr265 fr965 epix2
 
       - name: Set active SDK and add monkeyc to PATH
         run: |
