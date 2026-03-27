@@ -1,0 +1,8 @@
+garminconnect>=0.2.19
+fitparse>=1.2.0
+numpy>=1.26.0
+scipy>=1.13.0
+plotly>=5.22.0
+python-dotenv>=1.0.0
+fastapi>=0.111.0
+uvicorn>=0.29.0

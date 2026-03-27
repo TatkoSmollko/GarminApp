@@ -1,0 +1,125 @@
+# AGENTS.md
+
+## Project Summary
+
+This repository contains a Garmin Connect IQ watch app for guided LT1 testing on supported Garmin watches.
+The primary product is the watch app in `watch-app/`.
+
+The repository also contains a secondary Python backend/pipeline in `backend/` for offline/report processing.
+If a task does not explicitly involve the pipeline, prefer changing only the watch app.
+
+## Stack
+
+- Garmin Connect IQ / Monkey C
+- Garmin resource XML (`watch-app/manifest.xml`, `watch-app/resources/`)
+- Python 3 for the secondary reporting pipeline
+
+## Project Structure
+
+- `watch-app/source/`: Monkey C application code
+- `watch-app/source/tests/`: Connect IQ unit tests
+- `watch-app/resources/`: strings, settings, drawables, layouts
+- `watch-app/manifest.xml`: Connect IQ app manifest
+- `watch-app/monkey.jungle`: Monkey C build configuration
+- `backend/report/`: JSON schema and reporting notes
+- `backend/pipeline/`: secondary Python tooling for FIT/report processing
+
+## Entry Point
+
+- Watch app entry point: `LT1TestApp` in `watch-app/source/LT1TestApp.mc`
+
+## Build
+
+Watch app build:
+
+```sh
+monkeyc -f watch-app/monkey.jungle -o /tmp/garminApp.prg -d fr955 -w -y ~/.garmin/developer_key.der
+```
+
+Package export:
+
+```sh
+monkeyc -f watch-app/monkey.jungle -o /tmp/garminApp.iq -e -d fr955 -y ~/.garmin/developer_key.der
+```
+
+## Tests
+
+Connect IQ tests live in `watch-app/source/tests/LT1TestTests.mc`.
+
+Documented test harness command:
+
+```sh
+monkeydo /tmp/garminApp.prg fr955 -t
+```
+
+Notes:
+
+- Test execution depends on a working Connect IQ simulator session.
+- Automated simulator test execution is not yet confirmed as reliable in this repository.
+- If you cannot confirm simulator connectivity, say so explicitly instead of claiming tests passed.
+
+## Run
+
+Simulator run:
+
+```sh
+monkeydo /tmp/garminApp.prg fr955
+```
+
+On-device manual install:
+
+- build a `.prg`
+- copy it to `GARMIN/APPS` on the device
+
+## Coding Rules
+
+- Prefer small, isolated changes.
+- Do not mix watch-app changes with pipeline changes unless the task requires both.
+- Default to `watch-app/` unless the task explicitly requires `backend/`.
+- Keep UI changes round-display safe: avoid edge-heavy placement and assume circular clipping.
+- Preserve existing Garmin app behavior unless the task explicitly changes it.
+- Prefer explicit comments only where the code is not obvious.
+- Do not introduce broad refactors during bugfix tasks.
+- Keep build commands and assumptions documented in the final message.
+
+## Safe Change Rules
+
+- Verify the watch app still builds after code changes.
+- Do not remove files unless there is a clear reason.
+- Do not revert unrelated user changes.
+- Treat simulator-only workarounds as temporary and label them clearly.
+- If a test cannot be run, state that explicitly.
+
+## Definition Of Done
+
+A task is done when all of the following are true:
+
+- the requested code change is implemented
+- the watch app build is re-run successfully, or the failure is explained
+- user-visible behavior changes are described briefly
+- risks, limitations, and unverified parts are called out
+- the change is suitable for a focused PR
+
+## Pull Request Rules
+
+- Keep PRs small and single-purpose.
+- Include a short problem statement, change summary, and verification notes.
+- Mention any manual simulator or device checks performed.
+- Call out any follow-up work that was intentionally deferred.
+
+## Branch And Commit Guidance
+
+- Branch naming: `codex/<ticket-or-topic>-<short-slug>`
+- If a Trello card exists, prefer `codex/trello-<card-id>-<short-slug>`
+- Commit style:
+  - `fix(watch): ...`
+  - `feat(watch): ...`
+  - `chore(repo): ...`
+  - `docs(repo): ...`
+
+## Future Agent Workflow
+
+- Start from the ticket scope, not from broad repo cleanup.
+- Prefer one branch per ticket.
+- Prefer one PR per isolated task.
+- Explain assumptions when ticket details are incomplete.

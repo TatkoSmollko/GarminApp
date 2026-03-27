@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.0",
+  "test_protocol_version": 1,
+  "generated_at": "2026-03-26T09:45:00Z",
+
+  "athlete": {
+    "name": "Jane Athlete",
+    "age": 34,
+    "weight_kg": 62.0,
+    "hr_max": 185,
+    "vo2max_estimate": 52.1
+  },
+
+  "device": {
+    "model": "Forerunner 955",
+    "part_number": "006-B3790-00",
+    "firmware": "21.00"
+  },
+
+  "test": {
+    "date": "2026-03-26",
+    "start_time": "2026-03-26T07:00:00Z",
+    "duration_secs": 1980,
+    "sport": "running",
+    "environment": "outdoor_road"
+  },
+
+  "hr_source": {
+    "is_chest_strap": true,
+    "source_label": "chest_strap",
+    "confidence": 1.0,
+    "warnings": []
+  },
+
+  "lt1_result": {
+    "detected": true,
+    "lt1_hr_bpm": 148.3,
+    "lt1_pace_sm": 0.183,
+    "lt1_pace_min_km": "3:03",
+    "lt1_power_w": 218.5,
+    "dfa_a1_at_detection": 0.75,
+    "detection_stage": 5,
+    "confidence_score": 0.84,
+    "confidence_label": "High",
+    "signal_quality_overall": 0.91,
+    "warnings": []
+  },
+
+  "stages": [
+    {
+      "stage_number": 1,
+      "mean_hr_bpm": 118.4,
+      "mean_pace_sm": 0.244,
+      "mean_pace_min_km": "4:04",
+      "mean_power_w": 162.0,
+      "mean_dfa_a1": 0.96,
+      "validity_score": 0.90,
+      "rr_quality": 0.94,
+      "window_count": 4
+    },
+    {
+      "stage_number": 2,
+      "mean_hr_bpm": 129.7,
+      "mean_pace_sm": 0.222,
+      "mean_pace_min_km": "3:42",
+      "mean_power_w": 181.0,
+      "mean_dfa_a1": 0.89,
+      "validity_score": 1.00,
+      "rr_quality": 0.96,
+      "window_count": 4
+    },
+    {
+      "stage_number": 3,
+      "mean_hr_bpm": 138.2,
+      "mean_pace_sm": 0.207,
+      "mean_pace_min_km": "3:27",
+      "mean_power_w": 196.0,
+      "mean_dfa_a1": 0.84,
+      "validity_score": 1.00,
+      "rr_quality": 0.93,
+      "window_count": 4
+    },
+    {
+      "stage_number": 4,
+      "mean_hr_bpm": 143.8,
+      "mean_pace_sm": 0.196,
+      "mean_pace_min_km": "3:16",
+      "mean_power_w": 207.0,
+      "mean_dfa_a1": 0.79,
+      "validity_score": 1.00,
+      "rr_quality": 0.91,
+      "window_count": 4
+    },
+    {
+      "stage_number": 5,
+      "mean_hr_bpm": 152.1,
+      "mean_pace_sm": 0.182,
+      "mean_pace_min_km": "3:02",
+      "mean_power_w": 223.0,
+      "mean_dfa_a1": 0.69,
+      "validity_score": 0.75,
+      "rr_quality": 0.88,
+      "window_count": 4
+    },
+    {
+      "stage_number": 6,
+      "mean_hr_bpm": 161.4,
+      "mean_pace_sm": 0.171,
+      "mean_pace_min_km": "2:51",
+      "mean_power_w": 241.0,
+      "mean_dfa_a1": 0.57,
+      "validity_score": 0.75,
+      "rr_quality": 0.85,
+      "window_count": 4
+    }
+  ],
+
+  "timeseries": {
+    "timestamps_s":   [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570, 600, 630, 660, 690, 720, 750, 780, 810, 840, 870, 900, 930, 960, 990, 1020, 1050, 1080, 1110, 1140, 1170, 1200, 1230, 1260, 1290, 1320, 1350, 1380, 1410, 1440, 1470, 1500, 1530, 1560, 1590, 1620, 1650, 1680, 1710, 1740, 1770, 1800, 1830, 1860, 1890, 1920, 1950],
+    "dfa_a1":         [-1.0, -1.0, -1.0, -1.0, 1.01, 1.00, 0.99, 0.98, 0.97, 0.97, 0.96, 0.95, 0.95, 0.94, 0.94, 0.93, 0.92, 0.91, 0.91, 0.90, 0.90, 0.89, 0.89, 0.88, 0.88, 0.87, 0.86, 0.86, 0.85, 0.85, 0.84, 0.83, 0.83, 0.82, 0.82, 0.81, 0.80, 0.80, 0.79, 0.79, 0.78, 0.78, 0.77, 0.76, 0.75, 0.74, 0.73, 0.72, 0.72, 0.71, 0.70, 0.69, 0.68, 0.67, 0.66, 0.65, 0.63, 0.62, 0.60, 0.58, 0.57, 0.56, 0.55, 0.55, 0.56, 0.57],
+    "heart_rate_bpm": [105, 108, 111, 114, 116, 117, 118, 119, 119, 120, 120, 121, 121, 121, 122, 122, 122, 123, 124, 125, 127, 128, 129, 130, 130, 130, 131, 131, 132, 133, 135, 136, 137, 138, 138, 139, 140, 141, 142, 142, 143, 143, 144, 144, 145, 147, 148, 150, 151, 151, 152, 152, 153, 154, 155, 158, 159, 160, 161, 161, 162, 162, 163, 164, 164, 164],
+    "stage":          [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6],
+    "valid_window":   [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,false,false,false,false,true,true,true,true,false,false,false,false,true,true,true,true,false,false,false,false,true,true,true,true,false,false,false,false,true,true,true,true,false,false,false,false,true,true]
+  }
+}
