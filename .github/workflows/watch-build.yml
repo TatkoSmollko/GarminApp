@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CIQ_SDK_VERSION: "7.4.3"   # bump when new SDK released
+      CIQ_SDK_VERSION: "7.4.3"        # bump when new SDK released
+      CIQ_CLI_VERSION: "0.8.4"        # lindell/connect-iq-sdk-manager-cli
 
     steps:
       - name: Checkout
@@ -19,17 +20,16 @@ jobs:
 
       # ── 1. Install lindell/connect-iq-sdk-manager-cli ───────────────────────
       # Proper headless CLI wrapper around the Garmin SDK Manager.
-      # The official connectiq-sdk-manager-linux.zip is a GTK GUI app and
-      # cannot run headlessly in CI.
+      # The official connectiq-sdk-manager-linux.zip is a GTK GUI app that
+      # requires libwebkit2gtk-4.0 (removed in Ubuntu 24.04+) and cannot
+      # run headlessly in CI.
+      # Using the .deb package directly — no GitHub API call, no rate-limit risk.
       - name: Install connect-iq-sdk-manager-cli
         run: |
-          CLI_URL=$(curl -s https://api.github.com/repos/lindell/connect-iq-sdk-manager-cli/releases/latest \
-            | grep "browser_download_url.*linux_amd64" \
-            | cut -d '"' -f 4)
-          echo "Downloading: ${CLI_URL}"
-          wget -q "${CLI_URL}" -O /tmp/ciq-cli.tar.gz
-          tar -xzf /tmp/ciq-cli.tar.gz -C /tmp
-          sudo mv /tmp/connect-iq-sdk-manager /usr/local/bin/connect-iq-sdk-manager
+          DEB_URL="https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/v${{ env.CIQ_CLI_VERSION }}/connect-iq-sdk-manager-cli_${{ env.CIQ_CLI_VERSION }}_amd64.deb"
+          echo "Downloading: ${DEB_URL}"
+          wget -q "${DEB_URL}" -O /tmp/ciq-cli.deb
+          sudo dpkg -i /tmp/ciq-cli.deb
           connect-iq-sdk-manager --version
 
       # ── 2. Accept licence + download SDK ────────────────────────────────────
