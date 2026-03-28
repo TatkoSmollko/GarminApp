@@ -68,24 +68,12 @@ jobs:
           MONKEYC="$CIQ_SDK/bin/monkeyc"
           mkdir -p dist
 
-          # Extract only <iq:product> IDs — not permissions
-          DEVICES=$(grep '<iq:product' manifest.xml | grep -oE 'id="[^"]+"' | cut -d'"' -f2)
-          echo "Target devices:"
-          echo "$DEVICES"
-
-          # Build -d flag for each device
-          DEVICE_FLAGS=""
-          while IFS= read -r dev; do
-            DEVICE_FLAGS="$DEVICE_FLAGS -d $dev"
-          done <<< "$DEVICES"
-
-          # Build production .iq package (-r = strip debug, -l 1 = gradual typecheck)
+          # -e (package-app) reads devices from manifest.xml automatically — no -d needed
           "$MONKEYC" \
             -e \
             -f monkey.jungle \
             -y /tmp/dev_key.der \
             -o dist/LT1Test.iq \
-            $DEVICE_FLAGS \
             -r \
             -w \
             -l 1
