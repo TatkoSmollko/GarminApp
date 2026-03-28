@@ -52,7 +52,15 @@ jobs:
       #      base64 -i key.der | pbcopy   ← paste as DEV_KEY_DER secret
       - name: Write developer key
         run: |
-          echo "${{ secrets.DEV_KEY_DER }}" | base64 -d > /tmp/dev_key.der
+          # printf avoids the extra newline echo adds; tr strips any embedded newlines
+          printf '%s' "${{ secrets.DEV_KEY_DER }}" | tr -d '\n' | base64 -d > /tmp/dev_key.der
+          # Sanity check — DER files start with 0x30 (ASN.1 SEQUENCE)
+          FIRST=$(xxd -l1 -p /tmp/dev_key.der)
+          if [ "$FIRST" != "30" ]; then
+            echo "ERROR: key decode failed (first byte: $FIRST, expected 30)"
+            exit 1
+          fi
+          echo "Key decoded OK ($(wc -c < /tmp/dev_key.der) bytes)"
 
       # ── 5. Java (monkeyc is a JVM tool) ───────────────────────────────────
       - name: Set up Java
