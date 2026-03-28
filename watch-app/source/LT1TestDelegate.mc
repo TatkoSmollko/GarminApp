@@ -13,7 +13,7 @@ class LT1TestDelegate extends WatchUi.BehaviorDelegate {
     function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
         var key = keyEvent.getKey();
 
-        if (key == WatchUi.KEY_START) {
+        if (key == WatchUi.KEY_START || key == WatchUi.KEY_ENTER) {
             _handleStart();
             return true;
         }
@@ -26,6 +26,14 @@ class LT1TestDelegate extends WatchUi.BehaviorDelegate {
             return true;
         }
         return false;
+    }
+
+    function onMenu() as Boolean {
+        if (orchestrator.state == STATE_IDLE || orchestrator.state == STATE_COMPLETE) {
+            return false;
+        }
+        _handleBack();
+        return true;
     }
 
     function onSelect() as Boolean {
