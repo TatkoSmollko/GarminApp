@@ -32,11 +32,14 @@ jobs:
       - name: Install Connect IQ SDK
         run: |
           connect-iq-sdk-manager agreement accept
-          connect-iq-sdk-manager sdk install latest --type sdk
-          SDK_PATH="$HOME/.Garmin/ConnectIQ/Sdks"
-          LATEST=$(ls "$SDK_PATH" | sort -V | tail -1)
-          echo "CIQ_SDK=$SDK_PATH/$LATEST" >> "$GITHUB_ENV"
-          echo "Installed SDK: $LATEST"
+          # List available SDKs, pick latest, download and set it
+          LATEST_SDK=$(connect-iq-sdk-manager sdk list | tail -1 | awk '{print $1}')
+          echo "Installing SDK version: $LATEST_SDK"
+          connect-iq-sdk-manager sdk download "$LATEST_SDK"
+          connect-iq-sdk-manager sdk set "$LATEST_SDK"
+          SDK_PATH=$(connect-iq-sdk-manager sdk current-path)
+          echo "CIQ_SDK=$SDK_PATH" >> "$GITHUB_ENV"
+          echo "SDK path: $SDK_PATH"
 
       # ── 4. Write developer signing key from GitHub secret ─────────────────
       #    Store your key as: Settings → Secrets → DEV_KEY_DER (base64-encoded)
