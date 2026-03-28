@@ -45,22 +45,18 @@ jobs:
           echo "SDK path: $SDK_PATH"
 
       # ── 4. Write developer signing key from GitHub secret ─────────────────
-      #    Store your key as: Settings → Secrets → DEV_KEY_DER (base64-encoded)
+      #    Store the RAW PEM text as secret DEV_KEY_PEM (copy-paste the whole
+      #    -----BEGIN PRIVATE KEY----- block including headers).
       #    Generate once locally:
       #      openssl genrsa -out key.pem 4096
-      #      openssl pkcs8 -topk8 -inform PEM -outform DER -in key.pem -out key.der -nocrypt
-      #      base64 -i key.der | pbcopy   ← paste as DEV_KEY_DER secret
+      #      cat key.pem | pbcopy   ← paste as DEV_KEY_PEM secret
       - name: Write developer key
         run: |
-          # printf avoids the extra newline echo adds; tr strips any embedded newlines
-          printf '%s' "${{ secrets.DEV_KEY_DER }}" | tr -d '\n' | base64 -d > /tmp/dev_key.der
-          # Sanity check — DER files start with 0x30 (ASN.1 SEQUENCE)
-          FIRST=$(xxd -l1 -p /tmp/dev_key.der)
-          if [ "$FIRST" != "30" ]; then
-            echo "ERROR: key decode failed (first byte: $FIRST, expected 30)"
-            exit 1
-          fi
-          echo "Key decoded OK ($(wc -c < /tmp/dev_key.der) bytes)"
+          # Write PEM to file, then convert to PKCS#8 DER (exact Garmin-documented format)
+          printf '%s' "${{ secrets.DEV_KEY_PEM }}" > /tmp/dev_key.pem
+          openssl pkcs8 -topk8 -inform PEM -outform DER \
+            -in /tmp/dev_key.pem -out /tmp/dev_key.der -nocrypt
+          echo "Key ready ($(wc -c < /tmp/dev_key.der) bytes DER)"
 
       # ── 5. Java (monkeyc is a JVM tool) ───────────────────────────────────
       - name: Set up Java
