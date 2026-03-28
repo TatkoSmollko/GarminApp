@@ -59,14 +59,23 @@ jobs:
             -in /tmp/dev_key.pem -out /tmp/dev_key.der -nocrypt
           echo "Key ready ($(wc -c < /tmp/dev_key.der) bytes DER)"
 
-      # ── 5. Java (monkeyc is a JVM tool) ───────────────────────────────────
+      # ── 5. Download device definitions ────────────────────────────────────
+      - name: Download device definitions
+        run: |
+          DEVICES="fr955 fr265 fr965 epix2 edge540 edge550 edge840 edge850 edge1040 edge1050 edgeexplore2 edgemtb"
+          for dev in $DEVICES; do
+            echo "Downloading device: $dev"
+            connect-iq-sdk-manager device download "$dev" || echo "WARN: $dev not available, skipping"
+          done
+
+      # ── 7. Java (monkeyc is a JVM tool) ───────────────────────────────────
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      # ── 6. Build .iq package (all devices from manifest.xml) ──────────────
+      # ── 8. Build .iq package (all devices from manifest.xml) ──────────────
       - name: Build .iq package
         working-directory: watch-app
         run: |
@@ -86,7 +95,7 @@ jobs:
           echo "Build complete:"
           ls -lh dist/LT1Test.iq
 
-      # ── 6. Upload .iq as GitHub artifact ──────────────────────────────────
+      # ── 9. Upload .iq as GitHub artifact ──────────────────────────────────
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
