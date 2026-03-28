@@ -1,0 +1,38 @@
+# Build outputs
+watch-app/bin/
+watch-app/dist/
+bin/
+dist/
+
+# Python
+backend/pipeline/__pycache__/
+backend/pipeline/**/__pycache__/
+automation/__pycache__/
+backend/pipeline/.venv/
+backend/pipeline/output/
+**/*.pyc
+**/*.pyo
+
+# Garmin compiled binaries
+*.prg
+*.iq
+
+# Private keys — never touch these
+dev_key.der
+dev_key.pem
+dev_key_rsa.der
+dev_key_rsa.pem
+
+# macOS noise
+.DS_Store
+**/.DS_Store
+
+# Env / secrets
+backend/pipeline/.env
+automation/codex_runner.env
+
+# Docs (read-only reference, don't modify)
+docs/
+
+# Claude internal
+.claude/
