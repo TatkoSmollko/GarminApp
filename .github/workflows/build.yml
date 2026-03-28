@@ -51,9 +51,10 @@ jobs:
       #      openssl genrsa -out key.pem 4096
       #      cat key.pem | pbcopy   ← paste as DEV_KEY_PEM secret
       - name: Write developer key
+        env:
+          DEV_KEY_PEM: ${{ secrets.DEV_KEY_PEM }}
         run: |
-          # Write PEM to file, then convert to PKCS#8 DER (exact Garmin-documented format)
-          printf '%s' "${{ secrets.DEV_KEY_PEM }}" > /tmp/dev_key.pem
+          echo "$DEV_KEY_PEM" > /tmp/dev_key.pem
           openssl pkcs8 -topk8 -inform PEM -outform DER \
             -in /tmp/dev_key.pem -out /tmp/dev_key.der -nocrypt
           echo "Key ready ($(wc -c < /tmp/dev_key.der) bytes DER)"
