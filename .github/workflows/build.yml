@@ -54,25 +54,41 @@ jobs:
         run: |
           echo "${{ secrets.DEV_KEY_DER }}" | base64 -d > /tmp/dev_key.der
 
-      # ── 5. Build .iq package (all devices from manifest.xml) ──────────────
+      # ── 5. Java (monkeyc is a JVM tool) ───────────────────────────────────
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # ── 6. Build .iq package (all devices from manifest.xml) ──────────────
       - name: Build .iq package
         working-directory: watch-app
         run: |
           MONKEYC="$CIQ_SDK/bin/monkeyc"
+          mkdir -p dist
 
-          # Extract device list from manifest.xml
-          DEVICES=$(grep -oP '(?<=id=")[^"]+(?="/>)' manifest.xml | tr '\n' ';' | sed 's/;$//')
-          echo "Target devices: $DEVICES"
+          # Extract only <iq:product> IDs — not permissions
+          DEVICES=$(grep '<iq:product' manifest.xml | grep -oE 'id="[^"]+"' | cut -d'"' -f2)
+          echo "Target devices:"
+          echo "$DEVICES"
 
-          # Build production .iq package (no -t = no test mode)
+          # Build -d flag for each device
+          DEVICE_FLAGS=""
+          while IFS= read -r dev; do
+            DEVICE_FLAGS="$DEVICE_FLAGS -d $dev"
+          done <<< "$DEVICES"
+
+          # Build production .iq package (-r = strip debug, -l 1 = gradual typecheck)
           "$MONKEYC" \
-            --package-app \
-            --jungles monkey.jungle \
-            --private-key /tmp/dev_key.der \
-            --output dist/LT1Test.iq \
-            --device "$DEVICES" \
-            --warn \
-            --typecheck gradual
+            -e \
+            -f monkey.jungle \
+            -y /tmp/dev_key.der \
+            -o dist/LT1Test.iq \
+            $DEVICE_FLAGS \
+            -r \
+            -w \
+            -l 1
 
           echo "Build complete:"
           ls -lh dist/LT1Test.iq
