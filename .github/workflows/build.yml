@@ -3,12 +3,6 @@ name: Build & Package
 on:
   push:
     branches: [master, main]
-    paths:
-      - "watch-app/**"
-      - ".github/workflows/build.yml"
-  pull_request:
-    paths:
-      - "watch-app/**"
   workflow_dispatch:        # manual trigger from GitHub UI
 
 jobs:
@@ -65,8 +59,12 @@ jobs:
           DEVICES="fr955 fr265 fr965 epix2 edge540 edge550 edge840 edge850 edge1040 edge1050 edgeexplore2 edgemtb"
           for dev in $DEVICES; do
             echo "Downloading device: $dev"
-            connect-iq-sdk-manager device download "$dev" || echo "WARN: $dev not available, skipping"
+            connect-iq-sdk-manager devices download "$dev" \
+              || connect-iq-sdk-manager device download "$dev" \
+              || echo "WARN: $dev not available, skipping"
           done
+          echo "=== Downloaded devices ==="
+          ls "${HOME}/.Garmin/ConnectIQ/Devices/" 2>/dev/null || echo "WARNING: No devices directory found!"
 
       # ── 7. Java (monkeyc is a JVM tool) ───────────────────────────────────
       - name: Set up Java
