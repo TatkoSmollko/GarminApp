@@ -54,9 +54,17 @@ jobs:
           echo "Key ready ($(wc -c < /tmp/dev_key.der) bytes DER)"
 
       # ── 5. Download device definitions ────────────────────────────────────
+      #    Requires GARMIN_EMAIL + GARMIN_PASSWORD secrets (your Garmin Connect account)
       - name: Download device definitions
+        env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
         run: |
-          connect-iq-sdk-manager device download
+          connect-iq-sdk-manager login \
+            --username "$GARMIN_EMAIL" \
+            --password "$GARMIN_PASSWORD"
+          connect-iq-sdk-manager device download \
+            --manifest watch-app/manifest.xml
           echo "=== Downloaded devices ==="
           ls "${HOME}/.Garmin/ConnectIQ/Devices/" 2>/dev/null || echo "WARNING: No devices directory found!"
 
